@@ -1,0 +1,33 @@
+# SparkTTS Vietnamese Fine-tuning — Training Dependencies
+#
+# Preferred: uv sync --extra train  (reads pyproject.toml)
+# Fallback:  uv pip install -r training/requirements_train.txt
+
+# LoRA fine-tuning
+peft>=0.10.0
+
+# HuggingFace datasets (for prepare_data.py)
+# datasets 4.x uses torchcodec by default; we bypass it with Audio(decode=False)
+# so torchcodec is NOT required.
+datasets>=4.0.0
+
+# Training loop backend
+accelerate>=0.27.0
+
+# WER evaluation
+jiwer>=3.0.0
+
+# ASR for WER (Whisper)
+openai-whisper
+
+# MOS evaluation (UTMOSv2)
+utmosv2 @ git+https://github.com/sarulab-speech/UTMOSv2.git
+
+# Experiment tracking
+wandb
+
+# .env file support
+python-dotenv
+
+# Optional: Vietnamese text normalization
+pyvinorm @ git+https://github.com/hoang1007/pyvinorm.git

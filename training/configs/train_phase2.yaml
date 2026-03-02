@@ -1,0 +1,38 @@
+# Phase 2: pnnbao-ump/VieNeu-TTS-140h (140h, 193 speakers)
+# Goal: scale up to multi-speaker Vietnamese TTS
+
+run_name: sparktts-vi-phase2
+model_dir: pretrained_models/Spark-TTS-0.5B
+
+data:
+  metadata: data/phase2/metadata.jsonl
+  max_seq_len: 2048
+  normalize: false
+
+training:
+  use_lora: true
+  lora_r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  lora_target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 4
+  learning_rate: 1.0e-4                    # lower lr for larger dataset
+  lr_scheduler: cosine
+  warmup_steps: 500
+  max_steps: 50000
+
+  bf16: true
+  save_steps: 2000
+  eval_steps: 2000
+  output_dir: checkpoints/phase2/
+
+eval:
+  test_split: 0.02                         # 2% of 74k = ~1500 samples
+  whisper_model: large-v3
+  whisper_language: vi
+  max_new_tokens: 3000
+  top_k: 50
+  top_p: 0.95
+  temperature: 0.8

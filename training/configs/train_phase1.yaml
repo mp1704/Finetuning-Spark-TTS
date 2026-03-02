@@ -1,0 +1,38 @@
+# Phase 1: pnnbao-ump/ngochuyen_voice (~6h, 1 speaker)
+# Goal: pipeline validation on a small single-speaker dataset
+
+run_name: sparktts-vi-phase1
+model_dir: pretrained_models/Spark-TTS-0.5B
+
+data:
+  metadata: data/phase1/metadata.jsonl     # or metadata_tokenized.jsonl if pretokenized
+  max_seq_len: 2048
+  normalize: false                          # set true to use pyvinorm text normalization
+
+training:
+  use_lora: true
+  lora_r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  lora_target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 4           # effective batch size: 32
+  learning_rate: 2.0e-4
+  lr_scheduler: cosine
+  warmup_steps: 100
+  max_steps: 5000
+
+  bf16: true                               # A100 native bfloat16
+  save_steps: 500
+  eval_steps: 500
+  output_dir: checkpoints/phase1/
+
+eval:
+  test_split: 0.05                         # hold out 5% as test set
+  whisper_model: large-v3
+  whisper_language: vi
+  max_new_tokens: 3000
+  top_k: 50
+  top_p: 0.95
+  temperature: 0.8
