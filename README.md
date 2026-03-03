@@ -1,342 +1,248 @@
-<div align="center">
-    <h1>
-    Spark-TTS
-    </h1>
-    <p>
-    Official PyTorch code for inference of <br>
-    <b><em>Spark-TTS: An Efficient LLM-Based Text-to-Speech Model with Single-Stream Decoupled Speech Tokens</em></b>
-    </p>
-    <p>
-    <img src="src/logo/SparkTTS.jpg" alt="Spark-TTS Logo" style="width: 200px; height: 200px;">
-    </p>
-        <p>
-        <img src="src/logo/HKUST.jpg" alt="Institution 1" style="width: 200px; height: 60px;">
-        <img src="src/logo/mobvoi.jpg" alt="Institution 2" style="width: 200px; height: 60px;">
-        <img src="src/logo/SJU.jpg" alt="Institution 3" style="width: 200px; height: 60px;">
-    </p>
-    <p>
-        <img src="src/logo/NTU.jpg" alt="Institution 4" style="width: 200px; height: 60px;">
-        <img src="src/logo/NPU.jpg" alt="Institution 5" style="width: 200px; height: 60px;">
-        <img src="src/logo/SparkAudio2.jpg" alt="Institution 6" style="width: 200px; height: 60px;">
-    </p>
-    <p>
-    </p>
-    <a href="https://arxiv.org/pdf/2503.01710"><img src="https://img.shields.io/badge/Paper-ArXiv-red" alt="paper"></a>
-    <a href="https://sparkaudio.github.io/spark-tts/"><img src="https://img.shields.io/badge/Demo-Page-lightgrey" alt="version"></a>
-    <a href="https://huggingface.co/SparkAudio/Spark-TTS-0.5B"><img src="https://img.shields.io/badge/Hugging%20Face-Model%20Page-yellow" alt="Hugging Face"></a>
-    <a href="https://github.com/SparkAudio/Spark-TTS"><img src="https://img.shields.io/badge/Platform-linux-lightgrey" alt="version"></a>
-    <a href="https://github.com/SparkAudio/Spark-TTS"><img src="https://img.shields.io/badge/Python-3.12+-orange" alt="version"></a>
-    <a href="https://github.com/SparkAudio/Spark-TTS"><img src="https://img.shields.io/badge/PyTorch-2.5+-brightgreen" alt="python"></a>
-    <a href="https://github.com/SparkAudio/Spark-TTS"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="mit"></a>
-</div>
+# Spark-TTS Fine-tuning
 
-
-## Spark-TTS 🔥
-
-### Overview
-
-Spark-TTS is an advanced text-to-speech system that uses the power of large language models (LLM) for highly accurate and natural-sounding voice synthesis. It is designed to be efficient, flexible, and powerful for both research and production use.
-
-### Key Features
-
-- **Simplicity and Efficiency**: Built entirely on Qwen2.5, Spark-TTS eliminates the need for additional generation models like flow matching. Instead of relying on separate models to generate acoustic features, it directly reconstructs audio from the code predicted by the LLM. This approach streamlines the process, improving efficiency and reducing complexity.
-- **High-Quality Voice Cloning**: Supports zero-shot voice cloning, which means it can replicate a speaker's voice even without specific training data for that voice. This is ideal for cross-lingual and code-switching scenarios, allowing for seamless transitions between languages and voices without requiring separate training for each one.
-- **Bilingual Support**: Supports both Chinese and English, and is capable of zero-shot voice cloning for cross-lingual and code-switching scenarios, enabling the model to synthesize speech in multiple languages with high naturalness and accuracy.
-- **Controllable Speech Generation**: Supports creating virtual speakers by adjusting parameters such as gender, pitch, and speaking rate.
+LoRA fine-tuning and inference for [Spark-TTS-0.5B](https://huggingface.co/SparkAudio/Spark-TTS-0.5B) on custom voice datasets.
 
 ---
 
-<table align="center">
-  <tr>
-    <td align="center"><b>Inference Overview of Voice Cloning</b><br><img src="src/figures/infer_voice_cloning.png" width="80%" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Inference Overview of Controlled Generation</b><br><img src="src/figures/infer_control.png" width="80%" /></td>
-  </tr>
-</table>
+## Setup
 
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
-## 🚀 News
-
-- **[2025-03-04]** Our paper on this project has been published! You can read it here: [Spark-TTS](https://arxiv.org/pdf/2503.01710). 
-
-- **[2025-03-12]** Nvidia Triton Inference Serving is now supported. See the Runtime section below for more details.
-
-
-## Install
-**Clone and Install**
-
-  Here are instructions for installing on Linux. If you're on Windows, please refer to the [Windows Installation Guide](https://github.com/SparkAudio/Spark-TTS/issues/5).  
-*(Thanks to [@AcTePuKc](https://github.com/AcTePuKc) for the detailed Windows instructions!)*
-
-
-- Clone the repo
-``` sh
-git clone https://github.com/SparkAudio/Spark-TTS.git
-cd Spark-TTS
-```
-
-- Install Conda: please see https://docs.conda.io/en/latest/miniconda.html
-- Create Conda env:
-
-``` sh
-conda create -n sparktts -y python=3.12
-conda activate sparktts
-pip install -r requirements.txt
-# If you are in mainland China, you can set the mirror as follows:
-pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
-```
-
-**Model Download**
-
-Download via python:
-```python
-from huggingface_hub import snapshot_download
-
-snapshot_download("SparkAudio/Spark-TTS-0.5B", local_dir="pretrained_models/Spark-TTS-0.5B")
-```
-
-Download via git clone:
 ```sh
-mkdir -p pretrained_models
+git clone <this-repo>
+cd spa1
 
-# Make sure you have git-lfs installed (https://git-lfs.com)
-git lfs install
-
-git clone https://huggingface.co/SparkAudio/Spark-TTS-0.5B pretrained_models/Spark-TTS-0.5B
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
 ```
 
-**Basic Usage**
+### WandB
 
-You can simply run the demo with the following commands:
-``` sh
-cd example
-bash infer.sh
+Training logs to [Weights & Biases](https://wandb.ai). Create a `.env` file in the project root:
+
+```sh
+WANDB_API_KEY=your_api_key_here
+WANDB_PROJECT=sparktts-finetune
+WANDB_ENTITY=your_wandb_username
 ```
 
-Alternatively, you can directly execute the following command in the command line to perform inference：
+The training script loads `.env` automatically via `python-dotenv`. The project and run name can also be set per-run in `finetune/config.yaml` under the `wandb:` key.
 
-``` sh
-python -m cli.inference \
-    --text "text to synthesis." \
-    --device 0 \
-    --save_dir "path/to/save/audio" \
+---
+
+## 1. Download Pretrained Model
+
+```sh
+bash script/00_download_pretrain.sh
+```
+
+Downloads `SparkAudio/Spark-TTS-0.5B` into `pretrained_models/Spark-TTS-0.5B/`.
+
+---
+
+## 2. Prepare Dataset
+
+### Option A — LJSpeech (English)
+
+Download and split LJSpeech:
+
+```sh
+bash download_ljspeech.sh
+```
+
+This downloads, extracts to `LJSpeech-1.1/`, and creates `metadata_train.csv` / `metadata_val.csv` splits.
+
+Then preprocess (tokenize audio → JSONL):
+
+```sh
+CUDA_VISIBLE_DEVICES=0 uv run python -m finetune.preprocess \
+    --source ljspeech \
+    --data_dir LJSpeech-1.1 \
+    --output_dir data/ljspeech \
     --model_dir pretrained_models/Spark-TTS-0.5B \
-    --prompt_text "transcript of the prompt audio" \
-    --prompt_speech_path "path/to/prompt_audio"
+    --device cuda
 ```
 
-**Web UI Usage**
-
-You can start the UI interface by running `python webui.py --device 0`, which allows you to perform Voice Cloning and Voice Creation. Voice Cloning supports uploading reference audio or directly recording the audio.
-
-
-| **Voice Cloning** | **Voice Creation** |
-|:-------------------:|:-------------------:|
-| ![Image 1](src/figures/gradio_TTS.png) | ![Image 2](src/figures/gradio_control.png) |
-
-
-**Optional Methods**
-
-For additional CLI and Web UI methods, including alternative implementations and extended functionalities, you can refer to:
-
-- [CLI and UI by AcTePuKc](https://github.com/SparkAudio/Spark-TTS/issues/10)
-
-
-## Runtime
-
-**Nvidia Triton Inference Serving**
-
-We now provide a reference for deploying Spark-TTS with Nvidia Triton and TensorRT-LLM. The table below presents benchmark results on a single L20 GPU, using 26 different prompt_audio/target_text pairs (totalling 169 seconds of audio):
-
-| Model | Note   | Concurrency | Avg Latency     | RTF | 
-|-------|-----------|-----------------------|---------|--|
-| Spark-TTS-0.5B | [Code Commit](https://github.com/SparkAudio/Spark-TTS/tree/4d769ff782a868524f29e0be851ca64f8b22ebf1/runtime/triton_trtllm) | 1                   | 876.24 ms | 0.1362|
-| Spark-TTS-0.5B | [Code Commit](https://github.com/SparkAudio/Spark-TTS/tree/4d769ff782a868524f29e0be851ca64f8b22ebf1/runtime/triton_trtllm) | 2                   | 920.97 ms | 0.0737|
-| Spark-TTS-0.5B | [Code Commit](https://github.com/SparkAudio/Spark-TTS/tree/4d769ff782a868524f29e0be851ca64f8b22ebf1/runtime/triton_trtllm) | 4                   | 1611.51 ms | 0.0704|
-
-
-Please see the detailed instructions in [runtime/triton_trtllm/README.md](runtime/triton_trtllm/README.md ) for more information.
-
-
-## **Demos**
-
-Here are some demos generated by Spark-TTS using zero-shot voice cloning. For more demos, visit our [demo page](https://sparkaudio.github.io/spark-tts/).
+Output: `data/ljspeech/train_tokens.jsonl` and `data/ljspeech/val_tokens.jsonl`.
 
 ---
 
-<table>
-<tr>
-<td align="center">
-    
-**Donald Trump**
-</td>
-<td align="center">
-    
-**Zhongli (Genshin Impact)**
-</td>
-</tr>
+### Option B — HuggingFace Dataset (e.g. Vietnamese voice)
 
-<tr>
-<td align="center">
+```sh
+CUDA_VISIBLE_DEVICES=0 uv run python -m finetune.preprocess \
+    --source huggingface \
+    --hf_dataset <your-hf-dataset-id> \
+    --hf_audio_col audio \
+    --hf_text_col transcription \
+    --hf_id_col file_name \
+    --text_normalizer vinorm \
+    --output_dir data/myvoice \
+    --val_size 500 \
+    --model_dir pretrained_models/Spark-TTS-0.5B \
+    --device cuda
+```
 
-[Donald Trump](https://github.com/user-attachments/assets/fb225780-d9fe-44b2-9b2e-54390cb3d8fd)
+**HuggingFace preprocess arguments:**
 
-</td>
-<td align="center">
-    
-[Zhongli](https://github.com/user-attachments/assets/80eeb9c7-0443-4758-a1ce-55ac59e64bd6)
+| Flag | Description |
+|------|-------------|
+| `--hf_dataset` | HuggingFace dataset ID (e.g. `pnnbao-ump/ngochuyen_voice`) |
+| `--hf_audio_col` | Column name containing audio |
+| `--hf_text_col` | Column name containing text transcription |
+| `--hf_id_col` | Column name for sample ID (optional) |
+| `--text_normalizer` | `none` (default) or `vinorm` for Vietnamese |
+| `--val_size` | Number of samples held out for validation |
+| `--output_dir` | Where to write `train_tokens.jsonl` / `val_tokens.jsonl` |
 
-</td>
-</tr>
-</table>
-
----
-
-<table>
-
-<tr>
-<td align="center">
-    
-**陈鲁豫 Chen Luyu**
-</td>
-<td align="center">
-    
-**杨澜 Yang Lan**
-</td>
-</tr>
-
-<tr>
-<td align="center">
-    
-[陈鲁豫Chen_Luyu.webm](https://github.com/user-attachments/assets/5c6585ae-830d-47b1-992d-ee3691f48cf4)
-</td>
-<td align="center">
-    
-[Yang_Lan.webm](https://github.com/user-attachments/assets/2fb3d00c-abc3-410e-932f-46ba204fb1d7)
-</td>
-</tr>
-</table>
+Output: `data/myvoice/train_tokens.jsonl` and `data/myvoice/val_tokens.jsonl`.
 
 ---
 
+## 3. Configure Training
 
-<table>
-<tr>
-<td align="center">
-    
-**余承东 Richard Yu**
-</td>
-<td align="center">
-    
-**马云 Jack Ma**
-</td>
-</tr>
+Edit [finetune/config.yaml](finetune/config.yaml) — key fields to change:
 
-<tr>
-<td align="center">
+```yaml
+model_dir: pretrained_models/Spark-TTS-0.5B
 
-[Yu_Chengdong.webm](https://github.com/user-attachments/assets/78feca02-84bb-4d3a-a770-0cfd02f1a8da)
+data:
+  train_jsonl: data/myvoice/train_tokens.jsonl
+  val_jsonl:   data/myvoice/val_tokens.jsonl
 
-</td>
-<td align="center">
-    
-[Ma_Yun.webm](https://github.com/user-attachments/assets/2d54e2eb-cec4-4c2f-8c84-8fe587da321b)
+training:
+  output_dir: checkpoints/myvoice
+  num_train_epochs: 6
+  # resume_from_checkpoint: checkpoints/myvoice/checkpoint-660  # see "Resume" below
 
-</td>
-</tr>
-</table>
+wandb:
+  project: sparktts-finetune   # overrides WANDB_PROJECT from .env
+  run_name: myvoice-lora
+```
 
 ---
 
+## 4. Train
 
-<table>
-<tr>
-<td align="center">
-    
-**刘德华 Andy Lau**
-</td>
-<td align="center">
+```sh
+CUDA_VISIBLE_DEVICES=0 uv run python -m finetune.train --config finetune/config.yaml
+```
 
-**徐志胜 Xu Zhisheng**
-</td>
-</tr>
+Checkpoints are saved to `training.output_dir` every `save_steps` steps. The final LoRA adapter is written to `output_dir/` on completion.
 
-<tr>
-<td align="center">
+### Resume from a checkpoint
 
-[Liu_Dehua.webm](https://github.com/user-attachments/assets/195b5e97-1fee-4955-b954-6d10fa04f1d7)
+1. Increase `num_train_epochs` to the new total.
+2. Set `resume_from_checkpoint` to the latest checkpoint directory:
 
-</td>
-<td align="center">
-    
-[Xu_Zhisheng.webm](https://github.com/user-attachments/assets/dd812af9-76bd-4e26-9988-9cdb9ccbb87b)
+```yaml
+training:
+  num_train_epochs: 6
+  resume_from_checkpoint: checkpoints/myvoice/checkpoint-660
+```
 
-</td>
-</tr>
-</table>
-
+3. Run training again. The Trainer restores optimizer state, scheduler, and RNG from the checkpoint and continues until the total epoch count is reached.
 
 ---
 
-<table>
-<tr>
-<td align="center">
-    
-**哪吒 Nezha**
-</td>
-<td align="center">
-    
-**李靖 Li Jing**
-</td>
-</tr>
+## 5. Inference
 
-<tr>
-<td align="center">
+### Voice cloning mode (use a reference audio)
 
-[Ne_Zha.webm](https://github.com/user-attachments/assets/8c608037-a17a-46d4-8588-4db34b49ed1d)
-</td>
-<td align="center">
+```sh
+CUDA_VISIBLE_DEVICES=0 uv run python inference/run_finetuned_inference.py \
+    --model_dir pretrained_models/Spark-TTS-0.5B \
+    --adapter_dir checkpoints/myvoice \
+    --text "Text to synthesize." \
+    --prompt_speech_path path/to/reference.wav \
+    --output_path outputs/result.wav
+```
 
-[Li_Jing.webm](https://github.com/user-attachments/assets/aa8ba091-097c-4156-b4e3-6445da5ea101)
+### Controllable mode (no reference audio)
 
-</td>
-</tr>
-</table>
+```sh
+CUDA_VISIBLE_DEVICES=0 uv run python inference/run_finetuned_inference.py \
+    --model_dir pretrained_models/Spark-TTS-0.5B \
+    --adapter_dir checkpoints/myvoice \
+    --text "Text to synthesize." \
+    --gender female \
+    --pitch moderate \
+    --speed moderate \
+    --output_path outputs/result.wav
+```
 
+### Vietnamese text (with normalizer)
 
-## To-Do List
+```sh
+CUDA_VISIBLE_DEVICES=0 uv run python inference/run_finetuned_inference.py \
+    --model_dir pretrained_models/Spark-TTS-0.5B \
+    --adapter_dir checkpoints/myvoice \
+    --text "Ngày 25/12/2024, nhiệt độ đạt 32°C." \
+    --gender female \
+    --text_normalizer vinorm \
+    --output_path outputs/result.wav
+```
 
-- [x] Release the Spark-TTS paper.
-- [ ] Release the training code.
-- [ ] Release the training dataset, VoxBox.
+**All inference arguments:**
 
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--model_dir` | `pretrained_models/Spark-TTS-0.5B` | Base model directory |
+| `--adapter_dir` | required | LoRA adapter directory |
+| `--text` | required | Text to synthesize |
+| `--prompt_speech_path` | — | Reference wav for voice cloning mode |
+| `--prompt_text` | — | Transcript of reference audio (optional) |
+| `--gender` | — | `male` or `female` — enables controllable mode |
+| `--pitch` | `moderate` | `very_low / low / moderate / high / very_high` |
+| `--speed` | `moderate` | `very_low / low / moderate / high / very_high` |
+| `--text_normalizer` | `none` | `none` or `vinorm` |
+| `--temperature` | `0.8` | Sampling temperature |
+| `--top_k` | `50` | Top-k sampling |
+| `--top_p` | `0.95` | Top-p sampling |
+| `--device` | `cuda` | `cuda`, `cuda:0`, or `cpu` |
+| `--output_path` | `outputs/output_finetuned.wav` | Output wav path |
+
+> Provide either `--prompt_speech_path` (voice cloning) or `--gender` (controllable), not both.
+
+---
+
+## Project Structure
+
+```
+finetune/
+  config.yaml          # training configuration
+  preprocess.py        # tokenize dataset → JSONL
+  train.py             # LoRA training with HuggingFace Trainer
+  dataset.py           # dataset loader
+inference/
+  run_finetuned_inference.py   # inference with LoRA adapter
+script/
+  00_download_pretrain.sh      # download base model
+  01_pre.sh                    # example preprocess commands
+  02_train.sh                  # run training
+  03_inference.sh              # example inference commands
+pretrained_models/
+  Spark-TTS-0.5B/              # base model (downloaded in step 1)
+checkpoints/
+  <run-name>/                  # LoRA adapter + intermediate checkpoints
+data/
+  <dataset>/
+    train_tokens.jsonl
+    val_tokens.jsonl
+```
+
+---
 
 ## Citation
 
-```
+```bibtex
 @misc{wang2025sparktts,
-      title={Spark-TTS: An Efficient LLM-Based Text-to-Speech Model with Single-Stream Decoupled Speech Tokens}, 
-      author={Xinsheng Wang and Mingqi Jiang and Ziyang Ma and Ziyu Zhang and Songxiang Liu and Linqin Li and Zheng Liang and Qixi Zheng and Rui Wang and Xiaoqin Feng and Weizhen Bian and Zhen Ye and Sitong Cheng and Ruibin Yuan and Zhixian Zhao and Xinfa Zhu and Jiahao Pan and Liumeng Xue and Pengcheng Zhu and Yunlin Chen and Zhifei Li and Xie Chen and Lei Xie and Yike Guo and Wei Xue},
-      year={2025},
-      eprint={2503.01710},
-      archivePrefix={arXiv},
-      primaryClass={cs.SD},
-      url={https://arxiv.org/abs/2503.01710}, 
+  title={Spark-TTS: An Efficient LLM-Based Text-to-Speech Model with Single-Stream Decoupled Speech Tokens},
+  author={Xinsheng Wang et al.},
+  year={2025},
+  eprint={2503.01710},
+  archivePrefix={arXiv},
+  url={https://arxiv.org/abs/2503.01710}
 }
 ```
-
-
-## ⚠️ Usage Disclaimer
-
-This project provides a zero-shot voice cloning TTS model intended for academic research, educational purposes, and legitimate applications, such as personalized speech synthesis, assistive technologies, and linguistic research.
-
-Please note:
-
-- Do not use this model for unauthorized voice cloning, impersonation, fraud, scams, deepfakes, or any illegal activities.
-
-- Ensure compliance with local laws and regulations when using this model and uphold ethical standards.
-
-- The developers assume no liability for any misuse of this model.
-
-We advocate for the responsible development and use of AI and encourage the community to uphold safety and ethical principles in AI research and applications. If you have any concerns regarding ethics or misuse, please contact us.
