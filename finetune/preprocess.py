@@ -17,9 +17,23 @@ Supports two dataset sources:
           --hf_dataset pnnbao-ump/ngochuyen_voice \\
           --hf_audio_col audio \\
           --hf_text_col transcription \\
+          --hf_id_col file_name \\
           --text_normalizer vinorm \\
           --output_dir data/ngochuyen \\
           --val_size 500 \\
+          --model_dir pretrained_models/Spark-TTS-0.5B \\
+          --device cuda
+
+  pnnbao-ump/VieNeu-TTS-140h (text col is "text", id col is "_id"):
+      uv run python -m finetune.preprocess \\
+          --source huggingface \\
+          --hf_dataset pnnbao-ump/VieNeu-TTS-140h \\
+          --hf_audio_col audio \\
+          --hf_text_col text \\
+          --hf_id_col _id \\
+          --text_normalizer vinorm \\
+          --output_dir data/vieneu \\
+          --val_size 1000 \\
           --model_dir pretrained_models/Spark-TTS-0.5B \\
           --device cuda
 
@@ -194,6 +208,7 @@ def process_huggingface(
     output_dir: Path,
     hf_split: str = "train",
     normalizer=None,
+    id_col: str = "file_name",
 ):
     try:
         import io
@@ -248,7 +263,7 @@ def process_huggingface(
 
                     raw_text: str = sample[text_col].strip()
                     text: str = normalizer(raw_text) if normalizer else raw_text
-                    sample_id: str = sample.get("file_name", str(i)).strip()
+                    sample_id: str = str(sample.get(id_col, i)).strip()
 
                     global_toks, semantic_toks = tokenize_array(wav, src_sr, tokenizer)
 
@@ -297,6 +312,11 @@ def parse_args():
     parser.add_argument("--hf_split", default="train", help="HF dataset split to load")
     parser.add_argument("--hf_audio_col", default="audio")
     parser.add_argument("--hf_text_col", default="transcription")
+    parser.add_argument(
+        "--hf_id_col", default="file_name",
+        help="Dataset column to use as sample ID. "
+             "Use 'file_name' for ngochuyen_voice, '_id' for VieNeu-TTS-140h.",
+    )
     parser.add_argument(
         "--val_size", type=int, default=500,
         help="Number of samples to hold out for validation (HuggingFace source only)",
@@ -358,6 +378,7 @@ def main():
             output_dir=output_dir,
             hf_split=args.hf_split,
             normalizer=normalizer,
+            id_col=args.hf_id_col,
         )
 
     print("Preprocessing complete.")
