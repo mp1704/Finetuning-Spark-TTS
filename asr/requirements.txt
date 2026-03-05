@@ -1,0 +1,30 @@
+# ASR pipeline dependencies
+# Install with: uv pip install -r asr/requirements.txt
+
+# Core ASR inference (Zipformer RNNT via ONNX Runtime)
+sherpa-onnx>=1.10.0
+
+# Voice Activity Detection (Silero VAD via PyTorch Hub)
+silero-vad>=5.1
+
+# Audio I/O (load WAV/FLAC/OGG files)
+soundfile>=0.12.1
+
+# Audio resampling (to 16 kHz)
+soxr>=0.3.7
+
+# Real-time microphone capture (optional — only needed for streaming.py)
+# Linux needs PortAudio — build locally (no sudo):
+#   curl -LO https://files.portaudio.com/archives/pa_stable_v190700_20210406.tgz
+#   tar xf pa_stable_v190700_20210406.tgz && cd portaudio
+#   ./configure --prefix=$HOME/.local && make -j$(nproc) && make install
+#   export LD_LIBRARY_PATH=$HOME/.local/lib:$LD_LIBRARY_PATH
+sounddevice>=0.4.6
+
+# Model download from HuggingFace Hub
+huggingface_hub>=0.20.0
+
+# Generate tokens.txt from bpe.model (required by sherpa-onnx)
+sentencepiece>=0.1.99
+
+# Note: numpy and torch are already required by the parent project (requirements.txt)
