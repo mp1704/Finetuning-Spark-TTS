@@ -25,6 +25,20 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from cli.SparkTTS import SparkTTS
 
 
+def build_normalizer(name: str):
+    if name == "none":
+        return None
+    if name == "vinorm":
+        try:
+            from vinorm import TTSnorm
+        except ImportError as exc:
+            raise ImportError(
+                "vinorm is not installed. Run: uv pip install vinorm"
+            ) from exc
+        return lambda text: TTSnorm(text)
+    raise ValueError(f"Unknown text_normalizer: {name!r}")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run inference using a SparkTTS base model + LoRA adapter checkpoint."
@@ -76,6 +90,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top_k", type=int, default=50)
     parser.add_argument("--top_p", type=float, default=0.95)
     parser.add_argument(
+        "--text_normalizer",
+        choices=["none", "vinorm"],
+        default="none",
+        help=(
+            "Text normalizer for --text. "
+            "'vinorm' converts Vietnamese numbers/dates/abbreviations to spoken form "
+            "(requires: uv pip install vinorm)."
+        ),
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default="cuda",
@@ -117,6 +141,7 @@ def validate_args(args: argparse.Namespace) -> None:
 def main() -> None:
     args = parse_args()
     validate_args(args)
+    normalizer = build_normalizer(args.text_normalizer)
 
     device = resolve_device(args.device)
     dtype = choose_dtype(device)
@@ -133,9 +158,10 @@ def main() -> None:
     tts.model = model
     tts.tokenizer = tokenizer
 
+    text = normalizer(args.text) if normalizer else args.text
     with torch.no_grad():
         wav = tts.inference(
-            text=args.text,
+            text=text,
             prompt_speech_path=args.prompt_speech_path,
             prompt_text=args.prompt_text,
             gender=args.gender,
