@@ -1,0 +1,9 @@
+# MOS benchmark
+# uv pip install "utmosv2 @ git+https://github.com/sarulab-speech/UTMOSv2.git"
+utmosv2 @ git+https://github.com/sarulab-speech/UTMOSv2.git
+
+# WER benchmark reuses the local ASR module built on:
+# uv pip install -r asr/requirements.txt
+
+# Dataset benchmark also needs:
+# uv pip install datasets
